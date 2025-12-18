@@ -217,163 +217,107 @@ function initRace() {
 
 function createTrack() {
     // Ground
-    const groundGeometry = new THREE.PlaneGeometry(800, 800);
+    const groundGeometry = new THREE.PlaneGeometry(1000, 1000);
     const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
     
-    const trackWidth = 25; // Wider track
+    const trackWidth = 25;
     const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
-    const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-    const barrierMaterial = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
     
-    // Barriers removed - will be added later
+    // Simple oval track that works!
+    // Main straight (going forward/+Z direction)
+    const mainStraightLength = 150;
+    const mainStraight = new THREE.PlaneGeometry(trackWidth, mainStraightLength);
+    const mainStraightMesh = new THREE.Mesh(mainStraight, trackMaterial);
+    mainStraightMesh.rotation.x = -Math.PI / 2;
+    mainStraightMesh.position.set(-60, 0.01, 0);
+    mainStraightMesh.receiveShadow = true;
+    scene.add(mainStraightMesh);
     
-    // Starting straight (going north/forward)
-    const straight1Length = 100;
-    const straight1Geo = new THREE.PlaneGeometry(trackWidth, straight1Length);
-    const straight1 = new THREE.Mesh(straight1Geo, trackMaterial);
-    straight1.rotation.x = -Math.PI / 2;
-    straight1.position.set(0, 0.01, -50);
-    straight1.receiveShadow = true;
-    scene.add(straight1);
+    // Back straight (parallel to main)
+    const backStraight = new THREE.PlaneGeometry(trackWidth, mainStraightLength);
+    const backStraightMesh = new THREE.Mesh(backStraight, trackMaterial);
+    backStraightMesh.rotation.x = -Math.PI / 2;
+    backStraightMesh.position.set(60, 0.01, 0);
+    backStraightMesh.receiveShadow = true;
+    scene.add(backStraightMesh);
     
-    // Turn 1 - Right turn (90 degrees)
-    const turn1Radius = 35;
-    const turn1Geo = new THREE.RingGeometry(
-        turn1Radius - trackWidth / 2,
-        turn1Radius + trackWidth / 2,
-        32, 1, -Math.PI / 2, Math.PI / 2
+    // Turn 1 (top curve connecting straights)
+    const turnRadius = 60;
+    const turn1 = new THREE.RingGeometry(
+        turnRadius - trackWidth / 2,
+        turnRadius + trackWidth / 2,
+        64, 1, 0, Math.PI
     );
-    const turn1 = new THREE.Mesh(turn1Geo, trackMaterial);
-    turn1.rotation.x = -Math.PI / 2;
-    turn1.position.set(turn1Radius, 0.01, 0);
-    turn1.receiveShadow = true;
-    scene.add(turn1);
+    const turn1Mesh = new THREE.Mesh(turn1, trackMaterial);
+    turn1Mesh.rotation.x = -Math.PI / 2;
+    turn1Mesh.rotation.z = Math.PI / 2;
+    turn1Mesh.position.set(0, 0.01, mainStraightLength / 2);
+    turn1Mesh.receiveShadow = true;
+    scene.add(turn1Mesh);
     
-    // Straight 2 (going east)
-    const straight2Length = 120;
-    const straight2Geo = new THREE.PlaneGeometry(trackWidth, straight2Length);
-    const straight2 = new THREE.Mesh(straight2Geo, trackMaterial);
-    straight2.rotation.x = -Math.PI / 2;
-    straight2.rotation.z = Math.PI / 2;
-    straight2.position.set(turn1Radius * 2 + 60, 0.01, turn1Radius);
-    straight2.receiveShadow = true;
-    scene.add(straight2);
-    
-    // Turn 2 - Right turn (90 degrees)
-    const turn2Radius = 35;
-    const turn2Geo = new THREE.RingGeometry(
-        turn2Radius - trackWidth / 2,
-        turn2Radius + trackWidth / 2,
-        32, 1, 0, Math.PI / 2
+    // Turn 2 (bottom curve connecting straights)
+    const turn2 = new THREE.RingGeometry(
+        turnRadius - trackWidth / 2,
+        turnRadius + trackWidth / 2,
+        64, 1, 0, Math.PI
     );
-    const turn2 = new THREE.Mesh(turn2Geo, trackMaterial);
-    turn2.rotation.x = -Math.PI / 2;
-    turn2.position.set(turn1Radius * 2 + 120, 0.01, turn1Radius + turn2Radius);
-    turn2.receiveShadow = true;
-    scene.add(turn2);
+    const turn2Mesh = new THREE.Mesh(turn2, trackMaterial);
+    turn2Mesh.rotation.x = -Math.PI / 2;
+    turn2Mesh.rotation.z = -Math.PI / 2;
+    turn2Mesh.position.set(0, 0.01, -mainStraightLength / 2);
+    turn2Mesh.receiveShadow = true;
+    scene.add(turn2Mesh);
     
-    // Straight 3 (going south)
-    const straight3Length = 140;
-    const straight3Geo = new THREE.PlaneGeometry(trackWidth, straight3Length);
-    const straight3 = new THREE.Mesh(straight3Geo, trackMaterial);
-    straight3.rotation.x = -Math.PI / 2;
-    straight3.position.set(turn1Radius * 2 + 120 + turn2Radius, 0.01, turn1Radius + turn2Radius + 70);
-    straight3.receiveShadow = true;
-    scene.add(straight3);
-    
-    // Turn 3 - Hairpin (180 degrees)
-    const turn3Radius = 30;
-    const turn3Geo = new THREE.RingGeometry(
-        turn3Radius - trackWidth / 2,
-        turn3Radius + trackWidth / 2,
-        32, 1, Math.PI / 2, Math.PI
-    );
-    const turn3 = new THREE.Mesh(turn3Geo, trackMaterial);
-    turn3.rotation.x = -Math.PI / 2;
-    turn3.position.set(turn1Radius * 2 + 120 + turn2Radius, 0.01, turn1Radius + turn2Radius + 140);
-    turn3.receiveShadow = true;
-    scene.add(turn3);
-    
-    // Straight 4 (going north, back)
-    const straight4Length = 140;
-    const straight4Geo = new THREE.PlaneGeometry(trackWidth, straight4Length);
-    const straight4 = new THREE.Mesh(straight4Geo, trackMaterial);
-    straight4.rotation.x = -Math.PI / 2;
-    straight4.position.set(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2, 0.01, turn1Radius + turn2Radius + 70);
-    straight4.receiveShadow = true;
-    scene.add(straight4);
-    
-    // Turn 4 - Left chicane first part
-    const turn4Radius = 25;
-    const turn4Geo = new THREE.RingGeometry(
-        turn4Radius - trackWidth / 2,
-        turn4Radius + trackWidth / 2,
-        32, 1, Math.PI, Math.PI / 2
-    );
-    const turn4 = new THREE.Mesh(turn4Geo, trackMaterial);
-    turn4.rotation.x = -Math.PI / 2;
-    turn4.position.set(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2 - turn4Radius, 0.01, turn1Radius + turn2Radius - turn4Radius);
-    turn4.receiveShadow = true;
-    scene.add(turn4);
-    
-    // Final turn back to start
-    const turn5Radius = 40;
-    const turn5Geo = new THREE.RingGeometry(
-        turn5Radius - trackWidth / 2,
-        turn5Radius + trackWidth / 2,
-        32, 1, -Math.PI, Math.PI / 2
-    );
-    const turn5 = new THREE.Mesh(turn5Geo, trackMaterial);
-    turn5.rotation.x = -Math.PI / 2;
-    turn5.position.set(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2 - turn4Radius * 2 - turn5Radius, 0.01, turn1Radius - turn5Radius);
-    turn5.receiveShadow = true;
-    scene.add(turn5);
-    
-    // Final straight to finish
-    const straight5Length = 90;
-    const straight5Geo = new THREE.PlaneGeometry(trackWidth, straight5Length);
-    const straight5 = new THREE.Mesh(straight5Geo, trackMaterial);
-    straight5.rotation.x = -Math.PI / 2;
-    straight5.rotation.z = -Math.PI / 2;
-    straight5.position.set(35, 0.01, turn1Radius - turn5Radius - turn5Radius);
-    straight5.receiveShadow = true;
-    scene.add(straight5);
-    
-    // Start/Finish line - highly visible
-    const finishLineGeometry = new THREE.PlaneGeometry(trackWidth + 4, 4);
-    const finishLineMaterial = new THREE.MeshBasicMaterial({ 
-        color: 0xFFFFFF
-    });
+    // Start/Finish line
+    const finishLineGeometry = new THREE.PlaneGeometry(trackWidth + 6, 5);
+    const finishLineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
     const finishLine = new THREE.Mesh(finishLineGeometry, finishLineMaterial);
     finishLine.rotation.x = -Math.PI / 2;
-    finishLine.position.set(0, 0.03, -98);
+    finishLine.position.set(-60, 0.03, -mainStraightLength / 2 + 10);
+    finishLine.receiveShadow = true;
     scene.add(finishLine);
     
-    // Checkered pattern for finish line
+    // Checkered pattern
     for (let i = 0; i < 8; i++) {
-        for (let j = 0; j < 4; j++) {
+        for (let j = 0; j < 5; j++) {
             if ((i + j) % 2 === 1) {
                 const checkGeometry = new THREE.PlaneGeometry(3.5, 1);
                 const checkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
                 const check = new THREE.Mesh(checkGeometry, checkMaterial);
                 check.rotation.x = -Math.PI / 2;
-                check.position.set(-12.25 + i * 3.5, 0.04, -99.5 + j * 1);
+                check.position.set(-73.25 + i * 3.5, 0.04, -mainStraightLength / 2 + 7.5 + j * 1);
                 scene.add(check);
             }
         }
     }
     
-    // Checkpoints for lap counting
+    // White edge lines
+    const lineGeometry = new THREE.PlaneGeometry(0.5, mainStraightLength);
+    const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
+    
+    // Main straight lines
+    for (let side of [-1, 1]) {
+        const line = new THREE.Mesh(lineGeometry, lineMaterial);
+        line.rotation.x = -Math.PI / 2;
+        line.position.set(-60 + side * (trackWidth / 2 + 0.5), 0.02, 0);
+        scene.add(line);
+        
+        const line2 = new THREE.Mesh(lineGeometry, lineMaterial);
+        line2.rotation.x = -Math.PI / 2;
+        line2.position.set(60 + side * (trackWidth / 2 + 0.5), 0.02, 0);
+        scene.add(line2);
+    }
+    
+    // Checkpoints - positioned at key track locations
     checkpoints = [
-        { x: 0, z: -50 },                                      // Start/finish
-        { x: turn1Radius * 2 + 60, z: turn1Radius },          // First straight
-        { x: turn1Radius * 2 + 120 + turn2Radius, z: turn1Radius + turn2Radius + 70 }, // Second straight
-        { x: turn1Radius * 2 + 120 + turn2Radius, z: turn1Radius + turn2Radius + 140 }, // Hairpin
-        { x: 70, z: turn1Radius },                            // Back section
+        { x: -60, z: -60 },  // Start/finish area
+        { x: -60, z: 60 },   // End of main straight
+        { x: 60, z: 60 },    // Top turn exit
+        { x: 60, z: -60 }    // Bottom turn exit
     ];
 }
 
@@ -459,7 +403,7 @@ function createPlayerCar() {
         carGroup.add(sidepod);
     }
     
-    carGroup.position.set(0, 0.5, -95);
+    carGroup.position.set(-60, 0.5, -65);
     carGroup.rotation.y = 0;
     playerCar = carGroup;
     scene.add(carGroup);
