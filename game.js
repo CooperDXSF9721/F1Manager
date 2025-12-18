@@ -229,50 +229,7 @@ function createTrack() {
     const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
     const barrierMaterial = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
     
-    // Helper function to create barriers along a straight
-    function createStraightBarriers(x, z, rotation, length) {
-        for (let side of [-1, 1]) {
-            const segments = Math.ceil(length / 4);
-            for (let i = 0; i < segments; i++) {
-                const barrierGeometry = new THREE.BoxGeometry(2, 3, 4);
-                const barrier = new THREE.Mesh(barrierGeometry, barrierMaterial);
-                barrier.rotation.y = rotation;
-                
-                const segmentPos = (i / segments) * length - length / 2;
-                const barrierOffset = side * (trackWidth / 2 + 1.5);
-                const barrierOffsetX = barrierOffset * Math.cos(rotation + Math.PI / 2);
-                const barrierOffsetZ = barrierOffset * Math.sin(rotation + Math.PI / 2);
-                
-                const localX = segmentPos * Math.cos(rotation);
-                const localZ = segmentPos * Math.sin(rotation);
-                
-                barrier.position.set(x + localX + barrierOffsetX, 1.5, z + localZ + barrierOffsetZ);
-                barrier.castShadow = true;
-                scene.add(barrier);
-                barriers.push(barrier);
-            }
-        }
-    }
-    
-    // Helper function to create curved barriers
-    function createCurvedBarriers(centerX, centerZ, radius, startAngle, endAngle, isInner) {
-        const segments = Math.ceil(Math.abs(endAngle - startAngle) / (Math.PI / 16));
-        for (let i = 0; i <= segments; i++) {
-            const angle = startAngle + (i / segments) * (endAngle - startAngle);
-            const barrierGeometry = new THREE.BoxGeometry(2, 3, 3);
-            const barrier = new THREE.Mesh(barrierGeometry, barrierMaterial);
-            
-            const barrierRadius = radius + (isInner ? -(trackWidth / 2 + 1.5) : (trackWidth / 2 + 1.5));
-            const x = centerX + barrierRadius * Math.cos(angle);
-            const z = centerZ + barrierRadius * Math.sin(angle);
-            
-            barrier.position.set(x, 1.5, z);
-            barrier.rotation.y = angle + Math.PI / 2;
-            barrier.castShadow = true;
-            scene.add(barrier);
-            barriers.push(barrier);
-        }
-    }
+    // Barriers removed - will be added later
     
     // Starting straight (going north/forward)
     const straight1Length = 100;
@@ -282,7 +239,6 @@ function createTrack() {
     straight1.position.set(0, 0.01, -50);
     straight1.receiveShadow = true;
     scene.add(straight1);
-    createStraightBarriers(0, -50, 0, straight1Length);
     
     // Turn 1 - Right turn (90 degrees)
     const turn1Radius = 35;
@@ -296,8 +252,6 @@ function createTrack() {
     turn1.position.set(turn1Radius, 0.01, 0);
     turn1.receiveShadow = true;
     scene.add(turn1);
-    createCurvedBarriers(turn1Radius, 0, turn1Radius, -Math.PI / 2, 0, true);
-    createCurvedBarriers(turn1Radius, 0, turn1Radius, -Math.PI / 2, 0, false);
     
     // Straight 2 (going east)
     const straight2Length = 120;
@@ -308,7 +262,6 @@ function createTrack() {
     straight2.position.set(turn1Radius * 2 + 60, 0.01, turn1Radius);
     straight2.receiveShadow = true;
     scene.add(straight2);
-    createStraightBarriers(turn1Radius * 2 + 60, turn1Radius, Math.PI / 2, straight2Length);
     
     // Turn 2 - Right turn (90 degrees)
     const turn2Radius = 35;
@@ -322,8 +275,6 @@ function createTrack() {
     turn2.position.set(turn1Radius * 2 + 120, 0.01, turn1Radius + turn2Radius);
     turn2.receiveShadow = true;
     scene.add(turn2);
-    createCurvedBarriers(turn1Radius * 2 + 120, turn1Radius + turn2Radius, turn2Radius, 0, Math.PI / 2, true);
-    createCurvedBarriers(turn1Radius * 2 + 120, turn1Radius + turn2Radius, turn2Radius, 0, Math.PI / 2, false);
     
     // Straight 3 (going south)
     const straight3Length = 140;
@@ -333,7 +284,6 @@ function createTrack() {
     straight3.position.set(turn1Radius * 2 + 120 + turn2Radius, 0.01, turn1Radius + turn2Radius + 70);
     straight3.receiveShadow = true;
     scene.add(straight3);
-    createStraightBarriers(turn1Radius * 2 + 120 + turn2Radius, turn1Radius + turn2Radius + 70, Math.PI, straight3Length);
     
     // Turn 3 - Hairpin (180 degrees)
     const turn3Radius = 30;
@@ -347,8 +297,6 @@ function createTrack() {
     turn3.position.set(turn1Radius * 2 + 120 + turn2Radius, 0.01, turn1Radius + turn2Radius + 140);
     turn3.receiveShadow = true;
     scene.add(turn3);
-    createCurvedBarriers(turn1Radius * 2 + 120 + turn2Radius, turn1Radius + turn2Radius + 140, turn3Radius, Math.PI / 2, Math.PI * 3 / 2, true);
-    createCurvedBarriers(turn1Radius * 2 + 120 + turn2Radius, turn1Radius + turn2Radius + 140, turn3Radius, Math.PI / 2, Math.PI * 3 / 2, false);
     
     // Straight 4 (going north, back)
     const straight4Length = 140;
@@ -358,7 +306,6 @@ function createTrack() {
     straight4.position.set(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2, 0.01, turn1Radius + turn2Radius + 70);
     straight4.receiveShadow = true;
     scene.add(straight4);
-    createStraightBarriers(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2, turn1Radius + turn2Radius + 70, 0, straight4Length);
     
     // Turn 4 - Left chicane first part
     const turn4Radius = 25;
@@ -372,8 +319,6 @@ function createTrack() {
     turn4.position.set(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2 - turn4Radius, 0.01, turn1Radius + turn2Radius - turn4Radius);
     turn4.receiveShadow = true;
     scene.add(turn4);
-    createCurvedBarriers(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2 - turn4Radius, turn1Radius + turn2Radius - turn4Radius, turn4Radius, Math.PI, Math.PI * 3 / 2, true);
-    createCurvedBarriers(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2 - turn4Radius, turn1Radius + turn2Radius - turn4Radius, turn4Radius, Math.PI, Math.PI * 3 / 2, false);
     
     // Final turn back to start
     const turn5Radius = 40;
@@ -387,8 +332,6 @@ function createTrack() {
     turn5.position.set(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2 - turn4Radius * 2 - turn5Radius, 0.01, turn1Radius - turn5Radius);
     turn5.receiveShadow = true;
     scene.add(turn5);
-    createCurvedBarriers(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2 - turn4Radius * 2 - turn5Radius, turn1Radius - turn5Radius, turn5Radius, -Math.PI, -Math.PI / 2, true);
-    createCurvedBarriers(turn1Radius * 2 + 120 + turn2Radius - turn3Radius * 2 - turn4Radius * 2 - turn5Radius, turn1Radius - turn5Radius, turn5Radius, -Math.PI, -Math.PI / 2, false);
     
     // Final straight to finish
     const straight5Length = 90;
@@ -399,7 +342,6 @@ function createTrack() {
     straight5.position.set(35, 0.01, turn1Radius - turn5Radius - turn5Radius);
     straight5.receiveShadow = true;
     scene.add(straight5);
-    createStraightBarriers(35, turn1Radius - turn5Radius - turn5Radius, -Math.PI / 2, straight5Length);
     
     // Start/Finish line - highly visible
     const finishLineGeometry = new THREE.PlaneGeometry(trackWidth + 4, 4);
@@ -532,18 +474,9 @@ window.addEventListener('keyup', (e) => {
     keys[e.key.toLowerCase()] = false;
 });
 
-// Collision detection
+// Collision detection - disabled for now
 function checkBarrierCollision(x, z) {
-    for (let barrier of barriers) {
-        const dx = x - barrier.position.x;
-        const dz = z - barrier.position.z;
-        const distance = Math.sqrt(dx * dx + dz * dz);
-        
-        if (distance < 3.5) {
-            return true;
-        }
-    }
-    return false;
+    return false; // No barriers yet
 }
 
 // Race logic
