@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>F1 Team Manager & Racing</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Main Menu -->
+    <div id="mainMenu" class="screen active">
+        <div class="menu-container">
+            <h1 class="game-title">🏎️ F1 TEAM MANAGER</h1>
+            <div class="team-info">
+                <h2 id="teamName">Racing Legends</h2>
+                <div class="stats">
+                    <div class="stat">
+                        <span class="label">Budget:</span>
+                        <span id="budget">$50.0M</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Reputation:</span>
+                        <span id="reputation">50/100</span>
+                    </div>
+                    <div class="stat">
+                        <span class="label">Season:</span>
+                        <span id="season">1</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="menu-buttons">
+                <button onclick="showScreen('garage')" class="menu-btn">🔧 Garage</button>
+                <button onclick="showScreen('trackSelect')" class="menu-btn">🏁 Race</button>
+                <button onclick="showScreen('team')" class="menu-btn">👥 Team</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Team Screen -->
+    <div id="team" class="screen">
+        <div class="screen-container">
+            <h1>👥 Team Management</h1>
+            <div class="drivers-grid" id="driversGrid"></div>
+            <button onclick="showScreen('mainMenu')" class="back-btn">← Back</button>
+        </div>
+    </div>
+
+    <!-- Garage Screen -->
+    <div id="garage" class="screen">
+        <div class="screen-container">
+            <h1>🔧 Garage & Upgrades</h1>
+            <div class="car-stats" id="carStats"></div>
+            <div class="upgrades-grid" id="upgradesGrid"></div>
+            <button onclick="showScreen('mainMenu')" class="back-btn">← Back</button>
+        </div>
+    </div>
+
+    <!-- Track Selection -->
+    <div id="trackSelect" class="screen">
+        <div class="screen-container">
+            <h1>🏁 Select Circuit</h1>
+            <div class="tracks-grid" id="tracksGrid"></div>
+            <button onclick="showScreen('mainMenu')" class="back-btn">← Back</button>
+        </div>
+    </div>
+
+    <!-- 3D Race -->
+    <div id="race" class="screen">
+        <div id="raceUI">
+            <div class="hud">
+                <div class="hud-item">
+                    <span class="hud-label">LAP</span>
+                    <span id="currentLap" class="hud-value">1/5</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">SPEED</span>
+                    <span id="speed" class="hud-value">0</span>
+                </div>
+                <div class="hud-item">
+                    <span class="hud-label">POSITION</span>
+                    <span id="position" class="hud-value">1/12</span>
+                </div>
+            </div>
+            <div class="controls-hint">
+                W/↑: Accelerate | S/↓: Brake | A/←: Left | D/→: Right
+            </div>
+        </div>
+        <canvas id="raceCanvas"></canvas>
+    </div>
+
+    <!-- Race Results -->
+    <div id="results" class="screen">
+        <div class="results-container">
+            <h1>🏆 Race Results</h1>
+            <div id="resultsContent"></div>
+            <button onclick="showScreen('mainMenu')" class="menu-btn">Continue</button>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
