@@ -39,7 +39,7 @@ let currentLap = 1;
 
 // 3D Racing Variables
 let scene, camera, renderer;
-let playerCar, aiCars = [];
+let playerCar;
 let track;
 let keys = {};
 let playerVelocity = 0;
@@ -47,6 +47,7 @@ let playerRotation = 0;
 let checkpoints = [];
 let currentCheckpoint = 0;
 let raceActive = false;
+let barriers = [];
 
 // Screen Management
 function showScreen(screenId) {
@@ -170,13 +171,14 @@ function initRace() {
     currentLap = 1;
     currentCheckpoint = 0;
     raceActive = true;
+    barriers = [];
     
     const canvas = document.getElementById('raceCanvas');
     
     // Scene setup
     scene = new THREE.Scene();
     scene.background = new THREE.Color(0x87CEEB);
-    scene.fog = new THREE.Fog(0x87CEEB, 50, 200);
+    scene.fog = new THREE.Fog(0x87CEEB, 100, 300);
     
     // Camera
     camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
@@ -191,10 +193,14 @@ function initRace() {
     scene.add(ambientLight);
     
     const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    sunLight.position.set(50, 50, 50);
+    sunLight.position.set(100, 100, 50);
     sunLight.castShadow = true;
     sunLight.shadow.mapSize.width = 2048;
     sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.left = -150;
+    sunLight.shadow.camera.right = 150;
+    sunLight.shadow.camera.top = 150;
+    sunLight.shadow.camera.bottom = -150;
     scene.add(sunLight);
     
     // Create track
@@ -202,9 +208,6 @@ function initRace() {
     
     // Create player car
     createPlayerCar();
-    
-    // Create AI cars
-    createAICars();
     
     // Start animation
     animate();
@@ -214,85 +217,191 @@ function initRace() {
 
 function createTrack() {
     // Ground
-    const groundGeometry = new THREE.PlaneGeometry(300, 300);
+    const groundGeometry = new THREE.PlaneGeometry(500, 500);
     const groundMaterial = new THREE.MeshLambertMaterial({ color: 0x228B22 });
     const ground = new THREE.Mesh(groundGeometry, groundMaterial);
     ground.rotation.x = -Math.PI / 2;
     ground.receiveShadow = true;
     scene.add(ground);
     
-    // Race track (oval)
-    const trackWidth = 12;
-    const trackLength = 80;
-    const trackCurveRadius = 30;
-    
-    // Straight sections
-    const straightGeometry = new THREE.PlaneGeometry(trackWidth, trackLength);
+    const trackWidth = 15;
     const trackMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
-    
-    const straight1 = new THREE.Mesh(straightGeometry, trackMaterial);
-    straight1.rotation.x = -Math.PI / 2;
-    straight1.position.set(-trackCurveRadius, 0.01, 0);
-    straight1.receiveShadow = true;
-    scene.add(straight1);
-    
-    const straight2 = new THREE.Mesh(straightGeometry, trackMaterial);
-    straight2.rotation.x = -Math.PI / 2;
-    straight2.position.set(trackCurveRadius, 0.01, 0);
-    straight2.receiveShadow = true;
-    scene.add(straight2);
-    
-    // Curved sections
-    const curveGeometry = new THREE.RingGeometry(trackCurveRadius - trackWidth/2, trackCurveRadius + trackWidth/2, 32, 1, 0, Math.PI);
-    
-    const curve1 = new THREE.Mesh(curveGeometry, trackMaterial);
-    curve1.rotation.x = -Math.PI / 2;
-    curve1.position.set(0, 0.01, trackLength/2);
-    curve1.receiveShadow = true;
-    scene.add(curve1);
-    
-    const curve2 = new THREE.Mesh(curveGeometry, trackMaterial);
-    curve2.rotation.x = -Math.PI / 2;
-    curve2.rotation.z = Math.PI;
-    curve2.position.set(0, 0.01, -trackLength/2);
-    curve2.receiveShadow = true;
-    scene.add(curve2);
-    
-    // White track lines
     const lineMaterial = new THREE.MeshBasicMaterial({ color: 0xFFFFFF });
-    const lineGeometry = new THREE.PlaneGeometry(0.5, trackLength);
+    const barrierMaterial = new THREE.MeshLambertMaterial({ color: 0xFF0000 });
     
-    for (let side of [-1, 1]) {
-        const line = new THREE.Mesh(lineGeometry, lineMaterial);
-        line.rotation.x = -Math.PI / 2;
-        line.position.set(-trackCurveRadius + side * trackWidth/2, 0.02, 0);
-        scene.add(line);
-        
-        const line2 = new THREE.Mesh(lineGeometry, lineMaterial);
-        line2.rotation.x = -Math.PI / 2;
-        line2.position.set(trackCurveRadius + side * trackWidth/2, 0.02, 0);
-        scene.add(line2);
-    }
+    // Track sections with proper positioning
+    const sections = [];
     
-    // Checkpoints
-    checkpoints = [
-        { x: -trackCurveRadius, z: 0 },
-        { x: 0, z: trackLength/2 },
-        { x: trackCurveRadius, z: 0 },
-        { x: 0, z: -trackLength/2 }
-    ];
+    // Starting straight (going forward/north)
+    sections.push({
+        type: 'straight',
+        length: 60,
+        position: { x: 0, z: -30 },
+        rotation: 0
+    });
     
-    // Start/Finish line
-    const finishLineGeometry = new THREE.PlaneGeometry(trackWidth, 2);
+    // Right turn 90 degrees
+    sections.push({
+        type: 'curve',
+        radius: 25,
+        angle: Math.PI / 2,
+        position: { x: 25, z: 30 },
+        rotation: Math.PI
+    });
+    
+    // Straight going east
+    sections.push({
+        type: 'straight',
+        length: 50,
+        position: { x: 50, z: 55 },
+        rotation: Math.PI / 2
+    });
+    
+    // Hairpin turn (180 degrees)
+    sections.push({
+        type: 'curve',
+        radius: 20,
+        angle: Math.PI,
+        position: { x: 75, z: 55 },
+        rotation: Math.PI / 2
+    });
+    
+    // Straight going west
+    sections.push({
+        type: 'straight',
+        length: 50,
+        position: { x: 50, z: 35 },
+        rotation: -Math.PI / 2
+    });
+    
+    // Left chicane - first part
+    sections.push({
+        type: 'curve',
+        radius: 15,
+        angle: Math.PI / 3,
+        position: { x: 25, z: 35 },
+        rotation: -Math.PI / 2
+    });
+    
+    // Left chicane - second part
+    sections.push({
+        type: 'curve',
+        radius: 15,
+        angle: Math.PI / 3,
+        position: { x: 15, z: 22 },
+        rotation: -Math.PI / 6
+    });
+    
+    // Final straight back to start
+    sections.push({
+        type: 'straight',
+        length: 25,
+        position: { x: 7.5, z: 5 },
+        rotation: Math.PI
+    });
+    
+    // Build track sections
+    sections.forEach(section => {
+        if (section.type === 'straight') {
+            const geometry = new THREE.PlaneGeometry(trackWidth, section.length);
+            const mesh = new THREE.Mesh(geometry, trackMaterial);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.rotation.z = section.rotation;
+            mesh.position.set(section.position.x, 0.01, section.position.z);
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            
+            // White lines on edges
+            for (let side of [-1, 1]) {
+                const lineGeometry = new THREE.PlaneGeometry(0.5, section.length);
+                const line = new THREE.Mesh(lineGeometry, lineMaterial);
+                line.rotation.x = -Math.PI / 2;
+                line.rotation.z = section.rotation;
+                const offset = side * (trackWidth / 2 - 0.25);
+                const offsetX = offset * Math.cos(section.rotation);
+                const offsetZ = -offset * Math.sin(section.rotation);
+                line.position.set(section.position.x + offsetX, 0.02, section.position.z + offsetZ);
+                scene.add(line);
+                
+                // Barriers
+                const barrierGeometry = new THREE.BoxGeometry(2, 3, section.length);
+                const barrier = new THREE.Mesh(barrierGeometry, barrierMaterial);
+                barrier.rotation.y = section.rotation;
+                const barrierOffset = side * (trackWidth / 2 + 1.5);
+                const barrierOffsetX = barrierOffset * Math.cos(section.rotation);
+                const barrierOffsetZ = -barrierOffset * Math.sin(section.rotation);
+                barrier.position.set(section.position.x + barrierOffsetX, 1.5, section.position.z + barrierOffsetZ);
+                barrier.castShadow = true;
+                scene.add(barrier);
+                barriers.push(barrier);
+            }
+            
+        } else if (section.type === 'curve') {
+            const segments = 32;
+            const innerRadius = section.radius - trackWidth / 2;
+            const outerRadius = section.radius + trackWidth / 2;
+            
+            const geometry = new THREE.RingGeometry(innerRadius, outerRadius, segments, 1, 0, section.angle);
+            const mesh = new THREE.Mesh(geometry, trackMaterial);
+            mesh.rotation.x = -Math.PI / 2;
+            mesh.rotation.z = section.rotation;
+            mesh.position.set(section.position.x, 0.01, section.position.z);
+            mesh.receiveShadow = true;
+            scene.add(mesh);
+            
+            // Curved barriers
+            for (let radius of [innerRadius - 1, outerRadius + 1]) {
+                for (let i = 0; i <= segments; i++) {
+                    const angle = (i / segments) * section.angle;
+                    const barrierGeometry = new THREE.BoxGeometry(2, 3, 2);
+                    const barrier = new THREE.Mesh(barrierGeometry, barrierMaterial);
+                    
+                    const globalAngle = angle + section.rotation;
+                    const x = section.position.x + radius * Math.cos(globalAngle);
+                    const z = section.position.z + radius * Math.sin(globalAngle);
+                    
+                    barrier.position.set(x, 1.5, z);
+                    barrier.rotation.y = globalAngle + Math.PI / 2;
+                    barrier.castShadow = true;
+                    scene.add(barrier);
+                    barriers.push(barrier);
+                }
+            }
+        }
+    });
+    
+    // Start/Finish line - highly visible
+    const finishLineGeometry = new THREE.PlaneGeometry(trackWidth + 4, 3);
     const finishLineMaterial = new THREE.MeshBasicMaterial({ 
         color: 0xFFFFFF,
-        transparent: true,
-        opacity: 0.8
+        transparent: false
     });
     const finishLine = new THREE.Mesh(finishLineGeometry, finishLineMaterial);
     finishLine.rotation.x = -Math.PI / 2;
-    finishLine.position.set(-trackCurveRadius, 0.02, -trackLength/2 + 5);
+    finishLine.position.set(0, 0.03, -58);
     scene.add(finishLine);
+    
+    // Checkered pattern for finish line
+    for (let i = 0; i < 6; i++) {
+        for (let j = 0; j < 3; j++) {
+            if ((i + j) % 2 === 1) {
+                const checkGeometry = new THREE.PlaneGeometry(3, 1);
+                const checkMaterial = new THREE.MeshBasicMaterial({ color: 0x000000 });
+                const check = new THREE.Mesh(checkGeometry, checkMaterial);
+                check.rotation.x = -Math.PI / 2;
+                check.position.set(-7.5 + i * 3, 0.04, -59.5 + j * 1);
+                scene.add(check);
+            }
+        }
+    }
+    
+    // Checkpoints for lap counting
+    checkpoints = [
+        { x: 0, z: 0 },      // Start/finish
+        { x: 50, z: 55 },    // First straight
+        { x: 75, z: 45 },    // Hairpin
+        { x: 25, z: 35 },    // Back straight
+    ];
 }
 
 function createPlayerCar() {
@@ -339,39 +448,16 @@ function createPlayerCar() {
     wing.position.set(0, 0.8, -2);
     carGroup.add(wing);
     
-    carGroup.position.set(-30, 0.5, -35);
+    // Front wing
+    const frontWingGeometry = new THREE.BoxGeometry(2.5, 0.1, 0.5);
+    const frontWing = new THREE.Mesh(frontWingGeometry, wingMaterial);
+    frontWing.position.set(0, 0.2, 2);
+    carGroup.add(frontWing);
+    
+    carGroup.position.set(0, 0.5, -55);
+    carGroup.rotation.y = 0;
     playerCar = carGroup;
     scene.add(carGroup);
-}
-
-function createAICars() {
-    const colors = [0x0000FF, 0x00FF00, 0xFFFF00, 0xFF00FF, 0x00FFFF, 0xFFA500];
-    
-    for (let i = 0; i < 6; i++) {
-        const carGroup = new THREE.Group();
-        
-        const bodyGeometry = new THREE.BoxGeometry(2, 0.8, 4);
-        const bodyMaterial = new THREE.MeshLambertMaterial({ color: colors[i] });
-        const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
-        body.castShadow = true;
-        carGroup.add(body);
-        
-        const cockpitGeometry = new THREE.BoxGeometry(1.5, 0.6, 2);
-        const cockpit = new THREE.Mesh(cockpitGeometry, new THREE.MeshLambertMaterial({ color: 0x000000 }));
-        cockpit.position.set(0, 0.6, -0.5);
-        carGroup.add(cockpit);
-        
-        carGroup.position.set(-30 + (i % 2) * 4, 0.5, -35 - (i * 6));
-        carGroup.userData = {
-            velocity: 0.3 + Math.random() * 0.1,
-            checkpoint: 0,
-            lap: 1,
-            rotation: 0
-        };
-        
-        aiCars.push(carGroup);
-        scene.add(carGroup);
-    }
 }
 
 // Input handling
@@ -383,59 +469,60 @@ window.addEventListener('keyup', (e) => {
     keys[e.key.toLowerCase()] = false;
 });
 
+// Collision detection
+function checkBarrierCollision(x, z) {
+    for (let barrier of barriers) {
+        const dx = x - barrier.position.x;
+        const dz = z - barrier.position.z;
+        const distance = Math.sqrt(dx * dx + dz * dz);
+        
+        if (distance < 3) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Race logic
 function animate() {
     if (!raceActive) return;
     
     requestAnimationFrame(animate);
     
-    // Player controls
-    const maxSpeed = 0.8 + (gameState.team.car.engine / 100) * 0.4;
-    const acceleration = 0.02 + (gameState.team.car.engine / 100) * 0.01;
-    const turnSpeed = 0.03 + (gameState.team.car.chassis / 100) * 0.02;
+    // Player controls - reduced sensitivity and slower acceleration
+    const maxSpeed = 0.5 + (gameState.team.car.engine / 100) * 0.3;
+    const acceleration = 0.008 + (gameState.team.car.engine / 100) * 0.004; // Much slower acceleration
+    const turnSpeed = 0.015 + (gameState.team.car.chassis / 100) * 0.008; // Reduced turn speed
     
     if (keys['w'] || keys['arrowup']) {
         playerVelocity = Math.min(playerVelocity + acceleration, maxSpeed);
     } else if (keys['s'] || keys['arrowdown']) {
-        playerVelocity = Math.max(playerVelocity - acceleration * 1.5, -maxSpeed * 0.5);
+        playerVelocity = Math.max(playerVelocity - acceleration * 2, -maxSpeed * 0.4);
     } else {
         playerVelocity *= 0.98; // Friction
     }
     
     if (keys['a'] || keys['arrowleft']) {
-        playerRotation += turnSpeed;
+        playerRotation += turnSpeed * (playerVelocity / maxSpeed); // Turn speed based on current speed
     }
     if (keys['d'] || keys['arrowright']) {
-        playerRotation -= turnSpeed;
+        playerRotation -= turnSpeed * (playerVelocity / maxSpeed);
     }
     
-    // Update player position
-    playerCar.position.x += Math.sin(playerRotation) * playerVelocity;
-    playerCar.position.z += Math.cos(playerRotation) * playerVelocity;
-    playerCar.rotation.y = playerRotation;
+    // Calculate new position
+    const newX = playerCar.position.x + Math.sin(playerRotation) * playerVelocity;
+    const newZ = playerCar.position.z + Math.cos(playerRotation) * playerVelocity;
     
-    // Update AI cars
-    aiCars.forEach(car => {
-        const targetCheckpoint = checkpoints[car.userData.checkpoint];
-        const dx = targetCheckpoint.x - car.position.x;
-        const dz = targetCheckpoint.z - car.position.z;
-        const angle = Math.atan2(dx, dz);
-        
-        car.userData.rotation = angle;
-        car.rotation.y = angle;
-        
-        car.position.x += Math.sin(angle) * car.userData.velocity;
-        car.position.z += Math.cos(angle) * car.userData.velocity;
-        
-        // Check AI checkpoint
-        const dist = Math.sqrt(dx * dx + dz * dz);
-        if (dist < 15) {
-            car.userData.checkpoint = (car.userData.checkpoint + 1) % checkpoints.length;
-            if (car.userData.checkpoint === 0) {
-                car.userData.lap++;
-            }
-        }
-    });
+    // Check collision before moving
+    if (!checkBarrierCollision(newX, newZ)) {
+        playerCar.position.x = newX;
+        playerCar.position.z = newZ;
+    } else {
+        // Bounce back slightly on collision
+        playerVelocity *= -0.3;
+    }
+    
+    playerCar.rotation.y = playerRotation;
     
     // Check player checkpoint
     const targetCheckpoint = checkpoints[currentCheckpoint];
@@ -443,7 +530,7 @@ function animate() {
     const dz = targetCheckpoint.z - playerCar.position.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
     
-    if (dist < 15) {
+    if (dist < 20) {
         currentCheckpoint = (currentCheckpoint + 1) % checkpoints.length;
         if (currentCheckpoint === 0) {
             currentLap++;
@@ -456,24 +543,17 @@ function animate() {
         }
     }
     
-    // Camera follow
-    camera.position.x = playerCar.position.x - Math.sin(playerRotation) * 15;
-    camera.position.y = playerCar.position.y + 8;
-    camera.position.z = playerCar.position.z - Math.cos(playerRotation) * 15;
+    // Camera follow - better positioning
+    const camDistance = 12;
+    const camHeight = 6;
+    camera.position.x = playerCar.position.x - Math.sin(playerRotation) * camDistance;
+    camera.position.y = playerCar.position.y + camHeight;
+    camera.position.z = playerCar.position.z - Math.cos(playerRotation) * camDistance;
     camera.lookAt(playerCar.position);
     
     // Update HUD
-    document.getElementById('speed').textContent = Math.round(Math.abs(playerVelocity) * 300) + ' km/h';
-    
-    // Calculate position
-    let position = 1;
-    aiCars.forEach(car => {
-        if (car.userData.lap > currentLap || 
-            (car.userData.lap === currentLap && car.userData.checkpoint > currentCheckpoint)) {
-            position++;
-        }
-    });
-    document.getElementById('position').textContent = `${position}/7`;
+    document.getElementById('speed').textContent = Math.round(Math.abs(playerVelocity) * 400) + ' km/h';
+    document.getElementById('position').textContent = '1/1'; // Solo racing
     
     renderer.render(scene, camera);
 }
@@ -485,19 +565,11 @@ function updateHUD() {
 function finishRace() {
     raceActive = false;
     
-    // Calculate final position
-    let position = 1;
-    aiCars.forEach(car => {
-        if (car.userData.lap > currentLap) {
-            position++;
-        }
-    });
-    
-    // Calculate points and rewards
-    const pointsMap = { 1: 25, 2: 18, 3: 15, 4: 12, 5: 10, 6: 8, 7: 6 };
-    const points = pointsMap[position] || 0;
+    // Calculate time bonus (faster = more money)
+    const position = 1;
+    const points = 25;
     const prize = points * 500000;
-    const repGain = Math.max(-5, Math.min(10, points - 10));
+    const repGain = 10;
     
     gameState.money += prize;
     gameState.reputation = Math.max(0, Math.min(100, gameState.reputation + repGain));
@@ -511,7 +583,7 @@ function showResults(position, points, prize, repGain) {
     resultsContent.innerHTML = `
         <div class="result-item">
             <div>
-                <div style="font-size: 1.5em; margin-bottom: 10px;">Final Position</div>
+                <div style="font-size: 1.5em; margin-bottom: 10px;">Race Complete!</div>
                 <div class="result-position">P${position}</div>
             </div>
         </div>
@@ -520,7 +592,7 @@ function showResults(position, points, prize, repGain) {
             <span style="font-size: 1.5em; color: #f39c12;">${points} pts</span>
         </div>
         <div class="result-prize">Prize Money: ${formatMoney(prize)}</div>
-        <div style="opacity: 0.8;">Reputation: ${repGain > 0 ? '+' : ''}${repGain}</div>
+        <div style="opacity: 0.8;">Reputation: +${repGain}</div>
     `;
     
     showScreen('results');
